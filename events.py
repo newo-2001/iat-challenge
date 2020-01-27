@@ -4,7 +4,7 @@ class Event:
         self.name = name
 
     def __str__(self):
-        return f"[EVENT] {self.name}, {len(self.callbacks.len)} listeners"
+        return f"[EVENT] {self.name}, {len(self.callbacks)} listener" + ("s", "")[len(self.callbacks) == 1]
 
     def listen(self, callback):
         self.callbacks.append(callback)
