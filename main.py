@@ -1,18 +1,34 @@
 import events
-
-def callbackFunc(event):
-    print("[CALLBACK] " + event["text"])
+import io
+from time import sleep
 
 def main():
     print("Hello world!")
 
-    events.BumperEvent.listen(callbackFunc)
+    events.BumperEvent.listen(button_callback)
+    events.BalloonEvent.listen(balloon_callback)
 
-    events.BumperEvent.fire({
-        "text": "Some event data"
-    })
+    sleep(0.5)
+    io.RIGHT_MOTOR.backwards(2)
+    sleep(0.5)
+    io.RIGHT_MOTOR.forward(2)
+    sleep(0.5)
+    io.LEFT_MOTOR.backwards(2)
+    sleep(0.5)
+    io.LEFT_MOTOR.forward(2)
+    sleep(0.5)
 
-    print(events.BumperEvent)
+    while True:
+        io.poll()
+        sleep(0.02)
+    
+    io.end()
+
+def button_callback(event):
+    print(event["side"].name + " has been pressed")
+
+def balloon_callback(event):
+    print("Balloon has been pressed")
 
 if __name__ == "__main__":
     main()

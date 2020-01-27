@@ -1,7 +1,7 @@
 from enum import Enum
 from time import sleep
 import RPi.GPIO as GPIO
-import event
+import events
 
 # Classes
 class Direction(Enum):
@@ -11,45 +11,49 @@ class Direction(Enum):
     RIGHT = 4
 
 class Motor:
-    __init__(self, side, pins):
+    def __init__(self, side, pins):
         self.side = side
         self.__pins = pins
 
-    __step(self, states):
+    def __step(self, states):
         for i in range(0, 4):
             GPIO.output(self.__pins[i], states[i])
+        sleep(globals()["__MOTOR_DELAY"])
 
-    __step_forward():
-        for i in range(0, len(__INSTRUCTIONS)):
-            step(__INSTRUCTIONS[len(__INSTRUCTIONS - i - 1)]):
+    def __step_forward(self):
+        instructions = globals()["__INSTRUCTIONS"]
+        for i in range(0, len(instructions)):
+            self.__step(instructions[len(instructions) - i - 1])
 
-    __step_backwards():
-        for s in __INSTRUCTIONS:
-            step(s)
+    def __step_backwards(self):
+        for s in globals()["__INSTRUCTIONS"]:
+            self.__step(s)
 
-    forward(time):
-        for t in range(0, time / __MOTOR_DELAY):
-            __step_forward()
-            sleep(__MOTOR_DELAY)
+    def forward(self, time):
+        for t in range(0, int(time / (globals()["__MOTOR_DELAY"] * 4))):
+            self.__step_forward()
 
-    backwards(time):
-        for t in range(0, time / __MOTOR_DELAY):
-            __step_backwards()
-            sleep(__MOTOR_DELAY)
+    def backwards(self, time):
+        for t in range(0, int(time / (globals()["__MOTOR_DELAY"] * 4))):
+            self.__step_backwards()
 
 # API methods
 def end():
     GPIO.cleanup()
 
 def poll():
-    for pin in __INPUT_PINS.items():
-        if GPIO.input() == 0:
+    for pin in __INPUT_PINS.values():
+        state = GPIO.input(pin)
+        if state == 0 and last_input_state[str(pin)] == 1:
+            last_input_state[str(pin)] = 0
             if pin == 12:
                 events.BumperEvent.fire({"side": Direction.RIGHT})
             elif pin == 16:
                 events.BumperEvent.fire({"side": Direction.LEFT})
             elif pin == 21:
                 events.BalloonEvent.fire({})
+        elif state == 1 and last_input_state[str(pin)] == 0:
+            last_input_state[str(pin)] = 1
 
 # Initialize local constants
 __INPUT_PINS = {
@@ -70,12 +74,9 @@ __OUTPUT_PINS = {
 }
 
 __INSTRUCTIONS = [
-    [1, 0, 0, 0],
     [1, 1, 0, 0],
-    [0, 1, 0, 0],
     [0, 1, 1, 0],
-    [0, 0, 1, 0],
-    [0, 0, 0, 1],
+    [0, 0, 1, 1],
     [1, 0, 0, 1]
 ]
 
@@ -83,10 +84,16 @@ __MOTOR_DELAY = 0.002
 
 # Initialize GPIO pins
 GPIO.setmode(GPIO.BCM)
-for pin in __INPUT_PINS.items():
+for pin in __INPUT_PINS.values():
     GPIO.setup(pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
-for pin in __OUTPUT_PINS.items():
+for pin in __OUTPUT_PINS.values():
     GPIO.setup(pin, GPIO.OUT)
 
 LEFT_MOTOR = Motor(Direction.LEFT, [2, 3, 4, 17])
 RIGHT_MOTOR = Motor(Direction.RIGHT, [27, 22, 10, 9])
+
+last_input_state = {
+        "12": 1,
+        "16": 1,
+        "21": 1
+}
