@@ -26,7 +26,6 @@ def main():
     thread.daemon = True # Exit when the main thread exits
     thread.start()
 
-    thread.exit()
     io.end()
 
 def button_callback(event):
