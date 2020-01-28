@@ -24,17 +24,19 @@ def away_from_wall():
 def car_backward():
     GPIO.output(OUTPUT_PINS["LED_RED_BACK"], GPIO.HIGH)
 
-def __car_forward():
+def car_forward():
     GPIO.output(OUTPUT_PINS["LED_RED_BACK"], GPIO.LOW)
 
-def __balloon_popped(interval):
-    while True:
+def balloon_popped(interval):
+    i = 0
+    while i < 20:
         GPIO.output(OUTPUT_PINS["LED_WHITE_FRONT"],GPIO.HIGH)
         GPIO.output(OUTPUT_PINS["LED_RED_BACK"],GPIO.HIGH)
         sleep(interval)
         GPIO.output(OUTPUT_PINS["LED_WHITE_FRONT"],GPIO.LOW)
         GPIO.output(OUTPUT_PINS["LED_RED_BACK"],GPIO.LOW)
         sleep(interval)
+        i += 1
 
 # Initialize local constants
 OUTPUT_PINS = {
@@ -44,6 +46,7 @@ OUTPUT_PINS = {
 
 # Initialize GPIO pins
 GPIO.setmode(GPIO.BCM)
-GPIO.setup(21,GPIO.OUT)
+GPIO.setup(OUTPUT_PINS["LED_WHITE_FRONT"],GPIO.OUT)
+GPIO.setup(OUTPUT_PINS["LED_RED_BACK"],GPIO.OUT)
 
-start_motor(0.1)
+balloon_popped(0.05)
