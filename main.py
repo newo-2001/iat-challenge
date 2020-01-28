@@ -9,9 +9,16 @@ def loop():
         sleep(0.02)
 
 def main():
+    # Register event handlers
     events.BumperEvent.listen(button_callback)
     events.BalloonEvent.listen(balloon_callback)
-
+    
+    # Make a new thread for the event-poll loop
+    thread = threading.Thread(target=loop)
+    thread.daemon = True # Exit when the main thread exits
+    thread.start()
+    
+    # Car logic
     sleep(0.5)
     io.RIGHT_MOTOR.backwards(2)
     sleep(0.5)
@@ -22,11 +29,8 @@ def main():
     io.LEFT_MOTOR.forward(2)
     sleep(0.5)
 
-    thread = threading.Thread(target=loop)
-    thread.daemon = True # Exit when the main thread exits
-    thread.start()
-
-    thread.exit()
+    while True:
+        sleep(1) 
     io.end()
 
 def button_callback(event):
