@@ -3,6 +3,7 @@ from time import sleep
 import RPi.GPIO as GPIO
 import asyncio
 import events
+import concurrent
 
 # Classes
 class Direction(Enum):
@@ -13,24 +14,35 @@ class Car:
     def __init__(self, left_motor, right_motor):
         self.left_motor = left_motor
         self.right_motor = right_motor
+    
+    # Use time -1 for indefinitely
+    async def forward(self, time):
+        if time < 0:
+            time = 3600
+        with concurrent.futures.ThreadPoolExecutor(max_workers=2) as executor:
+            concurrent.futures.wait([executor.submit(self.left_motor.forward, time), executor.submit(self.right_motor.forward, time)])
+    
+    # Use time -1 for indefinitely
+    async def backwards(self, time):
+        if time < 0:
+            time = 3600
+        with concurrent.futures.ThreadPoolExecutor(max_workers=2) as executor:
+            concurrent.futures.wait([executor.submit(self.left_motor.backwards, time), executor.submit(self.right_motor.backwards, time)])
 
-    async def forward(time):
-        tasks = [self.left_motor.forward(time), self.right_motor.forward(time)]
-        await asyncio.wait(tasks)
-
-    async def backwards(time):
-        tasks = [self.left_motor.forward(time), self.right_motor.forward(time)]
-        await asyncio.wait(tasks)
-
-    async def turn_time(time, direction):
-        tasks = [(self.left_motor.forward(time), self.left_motor.backwards(time))[direction == Direction.RIGHT],
-                 (self.right_motor.forward(time), self.right_motor.backwards(time))[direction == Direction.LEFT]]
-        await asyncio.wait(tasks)
+    async def turn_time(self, time, direction):
+        left = (self.left_motor.forward, self.left_motor.backwards)[direction == Direction.RIGHT]
+        right = (self.right_motor.forward, self.right_motor.backwards)[direction == Direction.LEFT]
+        with concurrent.futures.ThreadPoolExecutor(max_workers=2) as executor:
+            concurrent.futures.wait([executor.submit(left, time), executor.submit(right, time)])
 
     # Positive angles turn right, negative angles turn right
-    async def turn_angle(angle):
-        global __MOTOR_DELAY
-        await self.turn_time(360 / angle * 4096 * __MOTOR_DELAY, (Direction.LEFT, Direction.RIGHT)[angle > 0])
+    async def turn_angle(self, angle):
+        await self.turn_time(angle / 360  * 4096  * globals()["__MOTOR_DELAY"], (Direction.LEFT, Direction.RIGHT)[angle > 0])
+
+    def stop(self):
+        globals()["__STOP_MOTORS"] = True
+        sleep(0.2)
+        globals()["__STOP_MOTORS"] = False
 
 class Motor:
     def __init__(self, side, pins):
@@ -51,14 +63,18 @@ class Motor:
         for s in globals()["__INSTRUCTIONS"]:
             self.__step(s)
 
-    async def forward(self, time):
+    def forward(self, time):
         for t in range(0, int(time / (globals()["__MOTOR_DELAY"] * 4))):
+            if globals()["__STOP_MOTORS"]:
+                return
             self.__step_forward()
 
-    async def backwards(self, time):
+    def backwards(self, time):
         for t in range(0, int(time / (globals()["__MOTOR_DELAY"] * 4))):
+            if globals()["__STOP_MOTORS"]:
+                return
             self.__step_backwards()
-
+    
 # API methods
 def end():
     GPIO.cleanup()
@@ -107,6 +123,7 @@ __INSTRUCTIONS = [
 ]
 
 __MOTOR_DELAY = 0.002
+__STOP_MOTORS = False
 
 # Initialize GPIO pins
 GPIO.setmode(GPIO.BCM)
@@ -117,6 +134,7 @@ for pin in __OUTPUT_PINS.values():
 
 LEFT_MOTOR = Motor(Direction.LEFT, [2, 3, 4, 17])
 RIGHT_MOTOR = Motor(Direction.RIGHT, [27, 22, 10, 9])
+CAR = Car(LEFT_MOTOR, RIGHT_MOTOR)
 
 last_input_state = {
         "12": 1,

@@ -1,17 +1,25 @@
+import uuid
+
 class Event:
     def __init__(self, name):
-        self.callbacks = []
+        self.callbacks = {}
         self.name = name
 
     def __str__(self):
         return "[EVENT] " + self.name + ", " + str(len(self.callbacks)) + " listener" + ("s", "")[len(self.callbacks) == 1]
 
     def listen(self, callback):
-        self.callbacks.append(callback)
+        id = uuid.uuid1().hex
+        self.callbacks[id] = callback
+        return id
 
     def fire(self, data):
-        for callback in self.callbacks:
+        for callback in self.callbacks.values():
             callback(data)
+
+    def removeListener(id):
+        if (callbacks[id]):
+            del callbacks[id]
 
 
 # Called when either of the bumper buttons has been pressed / released
