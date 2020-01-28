@@ -47,13 +47,17 @@ def poll():
         if state == 0 and last_input_state[str(pin)] == 1:
             last_input_state[str(pin)] = 0
             if pin == 12:
-                events.BumperEvent.fire({"side": Direction.RIGHT})
+                events.BumperPressEvent.fire({"side": Direction.RIGHT})
             elif pin == 16:
-                events.BumperEvent.fire({"side": Direction.LEFT})
+                events.BumperPressEvent.fire({"side": Direction.LEFT})
             elif pin == 21:
                 events.BalloonEvent.fire({})
         elif state == 1 and last_input_state[str(pin)] == 0:
             last_input_state[str(pin)] = 1
+            if pin == 12:
+                events.BumperReleaseEvent.fire({"side": Direction.RIGHT})
+            elif pin == 16:
+                events.BumperReleaseEvent.fire({"side": Direction.LEFT})
 
 # Initialize local constants
 __INPUT_PINS = {

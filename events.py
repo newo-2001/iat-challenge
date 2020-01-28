@@ -14,10 +14,11 @@ class Event:
             callback(data)
 
 
-# Called when either of the bumper buttons has been pressed
+# Called when either of the bumper buttons has been pressed / released
 # Fields:
-#   io.Direction side - the side of the button that was pressed from the car's prespective
-BumperEvent = Event("BumperEvent")
+#   io.Direction side - the side of the button that was pressed / released from the car's prespective
+BumperPressEvent = Event("BumperPressEvent")
+BumperReleaseEvent = Event("BumperReleaseEvent")
 
 # Called when the balloon button has been pressed, indicating that it has been popped
 BalloonEvent = Event("BalloonEvent")
