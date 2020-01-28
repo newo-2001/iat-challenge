@@ -1,12 +1,14 @@
 import events
 import controls as io
+import threading
 from time import sleep
 
-print(io)
+def loop():
+    while True:
+        io.poll()
+        sleep(0.02)
 
 def main():
-    print("Hello world!")
-
     events.BumperEvent.listen(button_callback)
     events.BalloonEvent.listen(balloon_callback)
 
@@ -20,10 +22,11 @@ def main():
     io.LEFT_MOTOR.forward(2)
     sleep(0.5)
 
-    while True:
-        io.poll()
-        sleep(0.02)
-    
+    thread = threading.Thread(target=loop)
+    thread.daemon = True # Exit when the main thread exits
+    thread.start()
+
+    thread.exit()
     io.end()
 
 def button_callback(event):
