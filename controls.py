@@ -1,14 +1,36 @@
 from enum import Enum
 from time import sleep
 import RPi.GPIO as GPIO
+import asyncio
 import events
 
 # Classes
 class Direction(Enum):
-    FORWARD = 1
-    BACKWARDS = 2
-    LEFT = 3
-    RIGHT = 4
+    LEFT = 1
+    RIGHT = 2
+
+class Car:
+    def __init__(self, left_motor, right_motor):
+        self.left_motor = left_motor
+        self.right_motor = right_motor
+
+    async def forward(time):
+        tasks = [self.left_motor.forward(time), self.right_motor.forward(time)]
+        await asyncio.wait(tasks)
+
+    async def backwards(time):
+        tasks = [self.left_motor.forward(time), self.right_motor.forward(time)]
+        await asyncio.wait(tasks)
+
+    async def turn_time(time, direction):
+        tasks = [(self.left_motor.forward(time), self.left_motor.backwards(time))[direction == Direction.RIGHT],
+                 (self.right_motor.forward(time), self.right_motor.backwards(time))[direction == Direction.LEFT]]
+        await asyncio.wait(tasks)
+
+    # Positive angles turn right, negative angles turn right
+    async def turn_angle(angle):
+        global __MOTOR_DELAY
+        await self.turn_time(360 / angle * 4096 * __MOTOR_DELAY, (Direction.LEFT, Direction.RIGHT)[angle > 0])
 
 class Motor:
     def __init__(self, side, pins):
@@ -29,11 +51,11 @@ class Motor:
         for s in globals()["__INSTRUCTIONS"]:
             self.__step(s)
 
-    def forward(self, time):
+    async def forward(self, time):
         for t in range(0, int(time / (globals()["__MOTOR_DELAY"] * 4))):
             self.__step_forward()
 
-    def backwards(self, time):
+    async def backwards(self, time):
         for t in range(0, int(time / (globals()["__MOTOR_DELAY"] * 4))):
             self.__step_backwards()
 

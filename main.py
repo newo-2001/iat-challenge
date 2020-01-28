@@ -29,13 +29,11 @@ def main():
     io.LEFT_MOTOR.forward(2)
     sleep(0.5)
 
-    # Start the event-poll thread
-    thread = threading.Thread(target=loop)
-    thread.daemon = True    # run the thread until the main thread exits
-    thread.start()
-
+    # Wait indefinitely
     while True:
         sleep(1)
+
+    # Give io the shutdown signal so it can
     io.end()
 
 def button_callback(event):
