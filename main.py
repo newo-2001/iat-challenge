@@ -1,6 +1,8 @@
 import events
-import io
+import controls as io
 from time import sleep
+
+print(io)
 
 def main():
     print("Hello world!")
