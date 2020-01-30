@@ -3,12 +3,23 @@ from time import sleep
 import RPi.GPIO as GPIO
 import asyncio
 import events
+import feedback
 import concurrent
+import threading
 
 # Classes
 class Direction(Enum):
     LEFT = 1
     RIGHT = 2
+
+class KillableThread(threading.Thread):
+    def __init__(self):
+        self.dead = False
+        threading.Thread.__init__(self)
+    
+    def kill():
+        self.dead = True
+
 
 class Car:
     def __init__(self, left_motor, right_motor):
@@ -24,10 +35,12 @@ class Car:
     
     # Use time -1 for indefinitely
     async def backwards(self, time):
+        feedback.car_backward()
         if time < 0:
             time = 3600
         with concurrent.futures.ThreadPoolExecutor(max_workers=2) as executor:
             concurrent.futures.wait([executor.submit(self.left_motor.backwards, time), executor.submit(self.right_motor.backwards, time)])
+        feedback.away_from_wall()
 
     async def turn_time(self, time, direction):
         left = (self.left_motor.forward, self.left_motor.backwards)[direction == Direction.RIGHT]
@@ -37,7 +50,8 @@ class Car:
 
     # Positive angles turn right, negative angles turn right
     async def turn_angle(self, angle):
-        await self.turn_time(angle / 360  * 4096  * globals()["__MOTOR_DELAY"], (Direction.LEFT, Direction.RIGHT)[angle > 0])
+        a = abs(angle)
+        await self.turn_time(a / 360  * 4096  * globals()["__MOTOR_DELAY"], (Direction.LEFT, Direction.RIGHT)[angle > 0])
 
     def stop(self):
         globals()["__STOP_MOTORS"] = True
@@ -77,26 +91,30 @@ class Motor:
     
 # API methods
 def end():
+    for pin in __OUTPUT_PINS:
+        GPIO.output(pin, 0)
+
     GPIO.cleanup()
 
 def poll():
     for pin in __INPUT_PINS.values():
         state = GPIO.input(pin)
+        if pin == 21 and last_input_state[str(pin)] == 0 and state == 1:
+            events.BalloonEvent.fire({})
         if state == 0 and last_input_state[str(pin)] == 1:
             last_input_state[str(pin)] = 0
             if pin == 12:
                 events.BumperPressEvent.fire({"side": Direction.RIGHT})
             elif pin == 16:
                 events.BumperPressEvent.fire({"side": Direction.LEFT})
-            elif pin == 21:
-                events.BalloonEvent.fire({})
+            #elif pin == 21:
+                #events.BalloonEvent.fire({})
         elif state == 1 and last_input_state[str(pin)] == 0:
             last_input_state[str(pin)] = 1
             if pin == 12:
                 events.BumperReleaseEvent.fire({"side": Direction.RIGHT})
             elif pin == 16:
                 events.BumperReleaseEvent.fire({"side": Direction.LEFT})
-
 # Initialize local constants
 __INPUT_PINS = {
     "BUTTON_BUMPER_RIGHT": 12,
