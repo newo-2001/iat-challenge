@@ -14,14 +14,14 @@ class Car:
     def __init__(self, left_motor, right_motor):
         self.left_motor = left_motor
         self.right_motor = right_motor
-    
+
     # Use time -1 for indefinitely
     async def forward(self, time):
         if time < 0:
             time = 3600
         with concurrent.futures.ThreadPoolExecutor(max_workers=2) as executor:
             concurrent.futures.wait([executor.submit(self.left_motor.forward, time), executor.submit(self.right_motor.forward, time)])
-    
+
     # Use time -1 for indefinitely
     async def backwards(self, time):
         if time < 0:
@@ -74,7 +74,7 @@ class Motor:
             if globals()["__STOP_MOTORS"]:
                 return
             self.__step_backwards()
-    
+
 # API methods
 def end():
     GPIO.cleanup()

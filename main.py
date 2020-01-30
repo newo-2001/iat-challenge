@@ -24,7 +24,7 @@ async def main():
     await io.CAR.forward(-1)
     sleep(0.5)
     await io.CAR.backwards(1)
-    
+
     # Wait indefinitely
     while True:
         sleep(1)
